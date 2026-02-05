@@ -299,11 +299,38 @@ export class MessagePanel {
             return value.toISOString();
         }
         if (typeof value === 'object') {
-            // Check if it's a Date-like object with timestamp
-            if ('low' in value && 'high' in value) {
+            const obj = value as any;
+
+            // Check if it's an AMQP datetime-offset (used by Azure Service Bus)
+            // Format: { type: {...}, value: {0:..., 1:..., ...7:...}, descriptor: { value: "com.microsoft:datetime-offset" } }
+            if (obj.descriptor?.value === 'com.microsoft:datetime-offset' && obj.value) {
+                try {
+                    // The value is 8 bytes representing ticks (100-nanosecond intervals since 0001-01-01)
+                    // stored in big-endian format
+                    const bytes = obj.value;
+                    // Convert bytes to a BigInt (big-endian)
+                    let ticks = BigInt(0);
+                    for (let i = 0; i < 8; i++) {
+                        ticks = (ticks << BigInt(8)) | BigInt(bytes[i] || 0);
+                    }
+                    // Convert ticks to milliseconds since Unix epoch
+                    // .NET ticks epoch is 0001-01-01, Unix epoch is 1970-01-01
+                    // Difference is 621355968000000000 ticks
+                    const ticksToUnixEpoch = BigInt('621355968000000000');
+                    const ticksPerMillisecond = BigInt(10000);
+                    const unixMillis = Number((ticks - ticksToUnixEpoch) / ticksPerMillisecond);
+                    return new Date(unixMillis).toISOString();
+                } catch (e) {
+                    console.error('Failed to parse datetime-offset:', e);
+                    return JSON.stringify(value);
+                }
+            }
+
+            // Check if it's a Date-like object with timestamp (Long format)
+            if ('low' in obj && 'high' in obj && !('type' in obj)) {
                 // This is likely a Long number (used for timestamps/sequence numbers)
                 try {
-                    const num = (value as any).low + (value as any).high * 0x100000000;
+                    const num = obj.low + obj.high * 0x100000000;
                     // Check if it looks like a timestamp (milliseconds since epoch)
                     if (num > 1000000000000 && num < 2000000000000) {
                         return new Date(num).toISOString();
@@ -313,6 +340,7 @@ export class MessagePanel {
                     return JSON.stringify(value);
                 }
             }
+
             try {
                 return JSON.stringify(value, null, 2);
             } catch {

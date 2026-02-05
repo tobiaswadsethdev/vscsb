@@ -2,8 +2,8 @@
   "name": "azure-servicebus-explorer",
   "displayName": "Azure Service Bus Explorer",
   "description": "Browse Azure Service Bus queues, topics, subscriptions and their messages including dead-letter queues",
-  "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "version": "1.0.0",
+  "publisher": "tobiaswadsethdev",
   "engines": {
     "vscode": "^1.85.0"
   },
