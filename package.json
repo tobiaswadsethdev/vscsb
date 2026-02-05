@@ -1,0 +1,168 @@
+{
+  "name": "azure-servicebus-explorer",
+  "displayName": "Azure Service Bus Explorer",
+  "description": "Browse Azure Service Bus queues, topics, subscriptions and their messages including dead-letter queues",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Azure",
+    "Other"
+  ],
+  "keywords": [
+    "azure",
+    "service bus",
+    "servicebus",
+    "dead-letter",
+    "messaging"
+  ],
+  "activationEvents": [
+    "onView:azureServiceBusExplorer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "azure-servicebus",
+          "title": "Azure Service Bus",
+          "icon": "resources/icons/servicebus.svg"
+        }
+      ]
+    },
+    "views": {
+      "azure-servicebus": [
+        {
+          "id": "azureServiceBusExplorer",
+          "name": "Service Bus Explorer",
+          "icon": "resources/icons/servicebus.svg"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "azureServiceBus.addNamespace",
+        "title": "Add Namespace",
+        "category": "Azure Service Bus",
+        "icon": "$(add)"
+      },
+      {
+        "command": "azureServiceBus.removeNamespace",
+        "title": "Remove Namespace",
+        "category": "Azure Service Bus",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "azureServiceBus.refresh",
+        "title": "Refresh",
+        "category": "Azure Service Bus",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "azureServiceBus.refreshNode",
+        "title": "Refresh",
+        "category": "Azure Service Bus",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "azureServiceBus.viewMessage",
+        "title": "View Message",
+        "category": "Azure Service Bus",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "azureServiceBus.peekMessages",
+        "title": "Peek Messages",
+        "category": "Azure Service Bus",
+        "icon": "$(list-flat)"
+      },
+      {
+        "command": "azureServiceBus.resubmitMessage",
+        "title": "Resubmit Message",
+        "category": "Azure Service Bus",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "azureServiceBus.deleteMessage",
+        "title": "Delete Message",
+        "category": "Azure Service Bus",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "azureServiceBus.purgeDeadLetter",
+        "title": "Purge Dead Letter Queue",
+        "category": "Azure Service Bus",
+        "icon": "$(clear-all)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "azureServiceBus.addNamespace",
+          "when": "view == azureServiceBusExplorer",
+          "group": "navigation@1"
+        },
+        {
+          "command": "azureServiceBus.refresh",
+          "when": "view == azureServiceBusExplorer",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "azureServiceBus.removeNamespace",
+          "when": "view == azureServiceBusExplorer && viewItem == namespace",
+          "group": "inline"
+        },
+        {
+          "command": "azureServiceBus.refreshNode",
+          "when": "view == azureServiceBusExplorer && viewItem =~ /^(namespace|queuesFolder|topicsFolder|queue|topic|subscription|activeMessages|deadLetterQueue)$/",
+          "group": "inline"
+        },
+        {
+          "command": "azureServiceBus.peekMessages",
+          "when": "view == azureServiceBusExplorer && viewItem =~ /^(queue|subscription|activeMessages|deadLetterQueue)$/",
+          "group": "1_messages@1"
+        },
+        {
+          "command": "azureServiceBus.purgeDeadLetter",
+          "when": "view == azureServiceBusExplorer && viewItem == deadLetterQueue",
+          "group": "2_actions@1"
+        },
+        {
+          "command": "azureServiceBus.viewMessage",
+          "when": "view == azureServiceBusExplorer && viewItem =~ /^(activeMessage|deadLetterMessage)$/",
+          "group": "inline"
+        },
+        {
+          "command": "azureServiceBus.resubmitMessage",
+          "when": "view == azureServiceBusExplorer && viewItem == deadLetterMessage",
+          "group": "1_actions@1"
+        },
+        {
+          "command": "azureServiceBus.deleteMessage",
+          "when": "view == azureServiceBusExplorer && viewItem == deadLetterMessage",
+          "group": "1_actions@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "eslint src --ext ts"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.0.0",
+    "@azure/service-bus": "^7.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.0.0"
+  }
+}
