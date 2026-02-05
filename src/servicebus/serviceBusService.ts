@@ -15,7 +15,7 @@ export interface QueueInfo {
 
 export interface TopicInfo {
     name: string;
-    subscriptionCount: number;
+    subscriptionCount?: number;
 }
 
 export interface SubscriptionInfo {
@@ -25,22 +25,62 @@ export interface SubscriptionInfo {
     deadLetterMessageCount: number;
 }
 
+// Check if the input looks like a connection string
+function isConnectionString(input: string): boolean {
+    return input.includes('Endpoint=sb://') && input.includes('SharedAccessKey');
+}
+
+// Extract namespace from connection string
+function getNamespaceFromConnectionString(connectionString: string): string {
+    const match = connectionString.match(/Endpoint=sb:\/\/([^.]+)\.servicebus\.windows\.net/);
+    return match ? `${match[1]}.servicebus.windows.net` : '';
+}
+
 export class ServiceBusService {
     private clients: Map<string, ServiceBusClient> = new Map();
     private adminClients: Map<string, ServiceBusAdministrationClient> = new Map();
+    private connectionStrings: Map<string, string> = new Map();
     private credential: TokenCredential;
 
     constructor() {
         this.credential = getAzureCredential();
     }
 
+    /**
+     * Register a connection string for a namespace
+     */
+    registerConnectionString(connectionString: string): string {
+        const namespace = getNamespaceFromConnectionString(connectionString);
+        if (namespace) {
+            this.connectionStrings.set(namespace, connectionString);
+            // Clear any existing clients for this namespace to force reconnection
+            this.clients.delete(namespace);
+            this.adminClients.delete(namespace);
+        }
+        return namespace;
+    }
+
+    /**
+     * Check if namespace uses connection string
+     */
+    hasConnectionString(namespace: string): boolean {
+        return this.connectionStrings.has(namespace);
+    }
+
     private getClient(namespace: string): ServiceBusClient {
         let client = this.clients.get(namespace);
         if (!client) {
-            const fullyQualifiedNamespace = namespace.includes('.servicebus.windows.net')
-                ? namespace
-                : `${namespace}.servicebus.windows.net`;
-            client = new ServiceBusClient(fullyQualifiedNamespace, this.credential);
+            const connectionString = this.connectionStrings.get(namespace);
+            if (connectionString) {
+                console.log(`[ServiceBus] Creating client for ${namespace} using connection string`);
+                client = new ServiceBusClient(connectionString);
+            } else {
+                const fullyQualifiedNamespace = namespace.includes('.servicebus.windows.net')
+                    ? namespace
+                    : `${namespace}.servicebus.windows.net`;
+                console.log(`[ServiceBus] Creating client for ${fullyQualifiedNamespace} using Azure AD`);
+                client = new ServiceBusClient(fullyQualifiedNamespace, this.credential);
+            }
             this.clients.set(namespace, client);
         }
         return client;
@@ -49,10 +89,17 @@ export class ServiceBusService {
     private getAdminClient(namespace: string): ServiceBusAdministrationClient {
         let client = this.adminClients.get(namespace);
         if (!client) {
-            const fullyQualifiedNamespace = namespace.includes('.servicebus.windows.net')
-                ? namespace
-                : `${namespace}.servicebus.windows.net`;
-            client = new ServiceBusAdministrationClient(fullyQualifiedNamespace, this.credential);
+            const connectionString = this.connectionStrings.get(namespace);
+            if (connectionString) {
+                console.log(`[ServiceBus] Creating admin client for ${namespace} using connection string`);
+                client = new ServiceBusAdministrationClient(connectionString);
+            } else {
+                const fullyQualifiedNamespace = namespace.includes('.servicebus.windows.net')
+                    ? namespace
+                    : `${namespace}.servicebus.windows.net`;
+                console.log(`[ServiceBus] Creating admin client for ${fullyQualifiedNamespace} using Azure AD`);
+                client = new ServiceBusAdministrationClient(fullyQualifiedNamespace, this.credential);
+            }
             this.adminClients.set(namespace, client);
         }
         return client;
@@ -128,10 +175,18 @@ export class ServiceBusService {
         }
 
         try {
-            const messages = await receiver.peekMessages(maxMessages);
+            // Add timeout wrapper to prevent hanging
+            const timeoutPromise = new Promise<ServiceBusReceivedMessage[]>((_, reject) => {
+                setTimeout(() => reject(new Error('Peek operation timed out after 30 seconds')), 30000);
+            });
+
+            const messages = await Promise.race([
+                receiver.peekMessages(maxMessages),
+                timeoutPromise
+            ]);
             return messages;
         } finally {
-            await receiver.close();
+            await receiver.close().catch(() => { /* ignore close errors */ });
         }
     }
 
@@ -160,10 +215,18 @@ export class ServiceBusService {
         }
 
         try {
-            const messages = await receiver.peekMessages(maxMessages);
+            // Add timeout wrapper to prevent hanging
+            const timeoutPromise = new Promise<ServiceBusReceivedMessage[]>((_, reject) => {
+                setTimeout(() => reject(new Error('Peek operation timed out after 30 seconds')), 30000);
+            });
+
+            const messages = await Promise.race([
+                receiver.peekMessages(maxMessages),
+                timeoutPromise
+            ]);
             return messages;
         } finally {
-            await receiver.close();
+            await receiver.close().catch(() => { /* ignore close errors */ });
         }
     }
 

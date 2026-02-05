@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import { ServiceBusTreeProvider } from './tree/serviceBusTreeProvider';
 import { ServiceBusService } from './servicebus/serviceBusService';
-import { registerNamespaceCommands } from './commands/namespaceCommands';
+import { registerNamespaceCommands, restoreConnectionStrings } from './commands/namespaceCommands';
 import { registerMessageCommands } from './commands/messageCommands';
 
 let serviceBusService: ServiceBusService;
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
     console.log('Azure Service Bus Explorer is now active');
 
     // Initialize the Service Bus service
@@ -15,6 +15,10 @@ export function activate(context: vscode.ExtensionContext): void {
     // Create the tree data provider
     const treeProvider = new ServiceBusTreeProvider(context, serviceBusService);
 
+    // Restore connection strings from secret storage
+    const savedNamespaces = context.globalState.get<string[]>('azureServiceBus.namespaces', []);
+    await restoreConnectionStrings(context, serviceBusService, savedNamespaces);
+
     // Register the tree view
     const treeView = vscode.window.createTreeView('azureServiceBusExplorer', {
         treeDataProvider: treeProvider,
@@ -22,7 +26,7 @@ export function activate(context: vscode.ExtensionContext): void {
     });
 
     // Register commands
-    registerNamespaceCommands(context, treeProvider);
+    registerNamespaceCommands(context, treeProvider, serviceBusService);
     registerMessageCommands(context, treeProvider, serviceBusService);
 
     // Add disposables

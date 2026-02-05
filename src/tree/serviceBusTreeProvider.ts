@@ -199,23 +199,32 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
     }
 
     private async getDeadLetterQueueChildren(element: DeadLetterQueueTreeItem): Promise<ServiceBusTreeItem[]> {
-        const messages = await this.serviceBusService.peekDeadLetterMessages(
-            element.namespace,
-            element.queueName,
-            element.topicName,
-            element.subscriptionName
-        );
+        try {
+            console.log(`[ServiceBus] Peeking dead-letter messages from ${element.queueName || `${element.topicName}/${element.subscriptionName}`}`);
 
-        return messages.map(message => {
-            const messageInfo: MessageInfo = {
-                namespace: element.namespace,
-                message,
-                queueName: element.queueName,
-                topicName: element.topicName,
-                subscriptionName: element.subscriptionName,
-                isDeadLetter: true
-            };
-            return new MessageTreeItem(messageInfo);
-        });
+            const messages = await this.serviceBusService.peekDeadLetterMessages(
+                element.namespace,
+                element.queueName,
+                element.topicName,
+                element.subscriptionName
+            );
+
+            console.log(`[ServiceBus] Found ${messages.length} dead-letter messages`);
+
+            return messages.map(message => {
+                const messageInfo: MessageInfo = {
+                    namespace: element.namespace,
+                    message,
+                    queueName: element.queueName,
+                    topicName: element.topicName,
+                    subscriptionName: element.subscriptionName,
+                    isDeadLetter: true
+                };
+                return new MessageTreeItem(messageInfo);
+            });
+        } catch (error) {
+            console.error(`[ServiceBus] Error peeking dead-letter messages:`, error);
+            throw error;
+        }
     }
 }

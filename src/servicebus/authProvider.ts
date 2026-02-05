@@ -12,6 +12,8 @@ export class VSCodeAzureCredential implements TokenCredential {
         const scopeArray = Array.isArray(scopes) ? scopes : [scopes];
 
         try {
+            console.log(`[ServiceBus Auth] Requesting token for scopes: ${scopeArray.join(', ')}`);
+
             // Use VS Code's built-in Microsoft authentication
             const session = await vscode.authentication.getSession(
                 VSCodeAzureCredential.AUTH_PROVIDER_ID,
@@ -23,11 +25,14 @@ export class VSCodeAzureCredential implements TokenCredential {
                 throw new Error('Failed to get authentication session');
             }
 
+            console.log(`[ServiceBus Auth] Got session for account: ${session.account.label}`);
+
             return {
                 token: session.accessToken,
                 expiresOnTimestamp: Date.now() + 3600 * 1000 // Assume 1 hour validity
             };
         } catch (error) {
+            console.error(`[ServiceBus Auth] Authentication failed:`, error);
             throw new Error(`Azure authentication failed: ${error instanceof Error ? error.message : String(error)}`);
         }
     }

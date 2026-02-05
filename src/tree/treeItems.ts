@@ -96,12 +96,12 @@ export class TopicTreeItem extends ServiceBusTreeItem {
     constructor(
         public readonly namespace: string,
         public readonly topicName: string,
-        public readonly subscriptionCount: number
+        public readonly subscriptionCount?: number
     ) {
         super(topicName, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'topic';
         this.iconPath = new vscode.ThemeIcon('broadcast');
-        this.description = `${subscriptionCount} subscriptions`;
+        this.description = `${subscriptionCount ?? 0} subscriptions`;
         this.tooltip = `Topic: ${topicName}\nSubscriptions: ${subscriptionCount}`;
     }
 }
