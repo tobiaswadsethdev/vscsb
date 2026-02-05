@@ -4,6 +4,10 @@
   "description": "Browse Azure Service Bus queues, topics, subscriptions and their messages including dead-letter queues",
   "version": "1.0.0",
   "publisher": "tobiaswadsethdev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yskq4h4w4g-oss/vscsb.git"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
