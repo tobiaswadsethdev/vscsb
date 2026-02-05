@@ -115,7 +115,7 @@ export class MessagePanel {
         // Build application properties table
         const appProperties = message.applicationProperties || {};
         const appPropertiesRows = Object.entries(appProperties)
-            .map(([key, value]) => `<tr><td>${this._escapeHtml(key)}</td><td>${this._escapeHtml(String(value))}</td></tr>`)
+            .map(([key, value]) => `<tr><td>${this._escapeHtml(key)}</td><td>${this._escapeHtml(this._formatValue(value))}</td></tr>`)
             .join('');
 
         return `<!DOCTYPE html>
@@ -289,5 +289,36 @@ export class MessagePanel {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
+    }
+
+    private _formatValue(value: unknown): string {
+        if (value === null || value === undefined) {
+            return 'N/A';
+        }
+        if (value instanceof Date) {
+            return value.toISOString();
+        }
+        if (typeof value === 'object') {
+            // Check if it's a Date-like object with timestamp
+            if ('low' in value && 'high' in value) {
+                // This is likely a Long number (used for timestamps/sequence numbers)
+                try {
+                    const num = (value as any).low + (value as any).high * 0x100000000;
+                    // Check if it looks like a timestamp (milliseconds since epoch)
+                    if (num > 1000000000000 && num < 2000000000000) {
+                        return new Date(num).toISOString();
+                    }
+                    return num.toString();
+                } catch {
+                    return JSON.stringify(value);
+                }
+            }
+            try {
+                return JSON.stringify(value, null, 2);
+            } catch {
+                return String(value);
+            }
+        }
+        return String(value);
     }
 }

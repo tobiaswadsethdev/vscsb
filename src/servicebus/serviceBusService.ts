@@ -6,6 +6,7 @@ import {
 } from '@azure/service-bus';
 import { TokenCredential } from '@azure/identity';
 import { getAzureCredential } from './authProvider';
+import Long from "long";
 
 export interface QueueInfo {
     name: string;
@@ -180,8 +181,9 @@ export class ServiceBusService {
                 setTimeout(() => reject(new Error('Peek operation timed out after 30 seconds')), 30000);
             });
 
+            // Always peek from sequence number 1 to get messages from the beginning
             const messages = await Promise.race([
-                receiver.peekMessages(maxMessages),
+                receiver.peekMessages(maxMessages, { fromSequenceNumber: Long.fromInt(1) }),
                 timeoutPromise
             ]);
             return messages;
@@ -201,11 +203,13 @@ export class ServiceBusService {
         let receiver;
 
         if (queueName) {
+            console.log(`[ServiceBus] Creating DLQ receiver for queue: ${queueName}`);
             receiver = client.createReceiver(queueName, {
                 receiveMode: 'peekLock',
                 subQueueType: 'deadLetter'
             });
         } else if (topicName && subscriptionName) {
+            console.log(`[ServiceBus] Creating DLQ receiver for topic: ${topicName}, subscription: ${subscriptionName}`);
             receiver = client.createReceiver(topicName, subscriptionName, {
                 receiveMode: 'peekLock',
                 subQueueType: 'deadLetter'
@@ -220,11 +224,20 @@ export class ServiceBusService {
                 setTimeout(() => reject(new Error('Peek operation timed out after 30 seconds')), 30000);
             });
 
+            console.log(`[ServiceBus] Calling peekMessages with maxMessages: ${maxMessages}`);
+
+            // Always peek from sequence number 1 to get messages from the beginning
+            // This is important because peekMessages maintains an internal cursor
             const messages = await Promise.race([
-                receiver.peekMessages(maxMessages),
+                receiver.peekMessages(maxMessages, { fromSequenceNumber: Long.fromInt(1) }),
                 timeoutPromise
             ]);
+
+            console.log(`[ServiceBus] peekDeadLetterMessages returned ${messages.length} messages`);
             return messages;
+        } catch (error) {
+            console.error(`[ServiceBus] Error in peekDeadLetterMessages:`, error);
+            throw error;
         } finally {
             await receiver.close().catch(() => { /* ignore close errors */ });
         }
