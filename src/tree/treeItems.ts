@@ -3,6 +3,7 @@ import { ServiceBusReceivedMessage } from '@azure/service-bus';
 
 export type TreeItemType =
     | 'namespace'
+    | 'namespaceSummary'
     | 'queuesFolder'
     | 'topicsFolder'
     | 'queue'
@@ -47,6 +48,21 @@ export class NamespaceTreeItem extends ServiceBusTreeItem {
     }
 }
 
+export class NamespaceSummaryTreeItem extends ServiceBusTreeItem {
+    readonly itemType = 'namespaceSummary' as const;
+
+    constructor(
+        public readonly namespace: string,
+        public readonly totalActiveMessages: number,
+        public readonly totalDeadLetterMessages: number
+    ) {
+        super(`[${totalActiveMessages}|${totalDeadLetterMessages}] Total Messages`, vscode.TreeItemCollapsibleState.None);
+        this.contextValue = 'namespaceSummary';
+        this.iconPath = new vscode.ThemeIcon('pulse');
+        this.tooltip = `Total Active Messages: ${totalActiveMessages}\nTotal Dead Letter Messages: ${totalDeadLetterMessages}`;
+    }
+}
+
 export class QueuesFolderTreeItem extends ServiceBusTreeItem {
     readonly itemType = 'queuesFolder' as const;
 
@@ -82,10 +98,9 @@ export class QueueTreeItem extends ServiceBusTreeItem {
         public readonly activeMessageCount: number,
         public readonly deadLetterMessageCount: number
     ) {
-        super(queueName, vscode.TreeItemCollapsibleState.Collapsed);
+        super(`[${activeMessageCount}|${deadLetterMessageCount}] ${queueName}`, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'queue';
         this.iconPath = new vscode.ThemeIcon('mail');
-        this.description = `${activeMessageCount} active, ${deadLetterMessageCount} dead-letter`;
         this.tooltip = `Queue: ${queueName}\nActive Messages: ${activeMessageCount}\nDead Letter Messages: ${deadLetterMessageCount}`;
     }
 }
@@ -96,13 +111,18 @@ export class TopicTreeItem extends ServiceBusTreeItem {
     constructor(
         public readonly namespace: string,
         public readonly topicName: string,
-        public readonly subscriptionCount?: number
+        public readonly subscriptionCount?: number,
+        public readonly activeMessageCount?: number,
+        public readonly deadLetterMessageCount?: number
     ) {
-        super(topicName, vscode.TreeItemCollapsibleState.Collapsed);
+        const messageCountDisplay = (activeMessageCount !== undefined && deadLetterMessageCount !== undefined)
+            ? `[${activeMessageCount}|${deadLetterMessageCount}] `
+            : '';
+        super(`${messageCountDisplay}${topicName}`, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'topic';
         this.iconPath = new vscode.ThemeIcon('broadcast');
         this.description = `${subscriptionCount ?? 0} subscriptions`;
-        this.tooltip = `Topic: ${topicName}\nSubscriptions: ${subscriptionCount}`;
+        this.tooltip = `Topic: ${topicName}\nSubscriptions: ${subscriptionCount}\nActive Messages: ${activeMessageCount ?? 0}\nDead Letter Messages: ${deadLetterMessageCount ?? 0}`;
     }
 }
 
@@ -116,10 +136,9 @@ export class SubscriptionTreeItem extends ServiceBusTreeItem {
         public readonly activeMessageCount: number,
         public readonly deadLetterMessageCount: number
     ) {
-        super(subscriptionName, vscode.TreeItemCollapsibleState.Collapsed);
+        super(`[${activeMessageCount}|${deadLetterMessageCount}] ${subscriptionName}`, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'subscription';
         this.iconPath = new vscode.ThemeIcon('list-tree');
-        this.description = `${activeMessageCount} active, ${deadLetterMessageCount} dead-letter`;
         this.tooltip = `Subscription: ${subscriptionName}\nActive Messages: ${activeMessageCount}\nDead Letter Messages: ${deadLetterMessageCount}`;
     }
 }
@@ -134,10 +153,9 @@ export class ActiveMessagesTreeItem extends ServiceBusTreeItem {
         public readonly subscriptionName: string | undefined,
         public readonly messageCount: number
     ) {
-        super('Active Messages', vscode.TreeItemCollapsibleState.Collapsed);
+        super(`[${messageCount}] Active Messages`, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'activeMessages';
         this.iconPath = new vscode.ThemeIcon('mail-read');
-        this.description = `(${messageCount})`;
         this.tooltip = `Active Messages: ${messageCount}`;
     }
 }
@@ -152,10 +170,9 @@ export class DeadLetterQueueTreeItem extends ServiceBusTreeItem {
         public readonly subscriptionName: string | undefined,
         public readonly messageCount: number
     ) {
-        super('Dead Letter Queue', vscode.TreeItemCollapsibleState.Collapsed);
+        super(`[${messageCount}] Dead Letter Queue`, vscode.TreeItemCollapsibleState.Collapsed);
         this.contextValue = 'deadLetterQueue';
         this.iconPath = new vscode.ThemeIcon('warning');
-        this.description = `(${messageCount})`;
         this.tooltip = `Dead Letter Messages: ${messageCount}`;
     }
 }

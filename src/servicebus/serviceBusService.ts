@@ -17,6 +17,8 @@ export interface QueueInfo {
 export interface TopicInfo {
     name: string;
     subscriptionCount?: number;
+    activeMessageCount?: number;
+    deadLetterMessageCount?: number;
 }
 
 export interface SubscriptionInfo {
@@ -220,9 +222,25 @@ export class ServiceBusService {
 
         for await (const topic of adminClient.listTopics()) {
             const runtimeProps = await adminClient.getTopicRuntimeProperties(topic.name);
+
+            // Calculate total messages across all subscriptions
+            let totalActive = 0;
+            let totalDeadLetter = 0;
+
+            for await (const subscription of adminClient.listSubscriptions(topic.name)) {
+                const subRuntimeProps = await adminClient.getSubscriptionRuntimeProperties(
+                    topic.name,
+                    subscription.subscriptionName
+                );
+                totalActive += subRuntimeProps.activeMessageCount;
+                totalDeadLetter += subRuntimeProps.deadLetterMessageCount;
+            }
+
             topics.push({
                 name: topic.name,
-                subscriptionCount: runtimeProps.subscriptionCount
+                subscriptionCount: runtimeProps.subscriptionCount,
+                activeMessageCount: totalActive,
+                deadLetterMessageCount: totalDeadLetter
             });
         }
 

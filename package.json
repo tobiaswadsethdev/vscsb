@@ -2,11 +2,11 @@
   "name": "azure-servicebus-explorer",
   "displayName": "Azure Service Bus Explorer",
   "description": "Browse Azure Service Bus queues, topics, subscriptions and their messages including dead-letter queues",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "tobiaswadsethdev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yskq4h4w4g-oss/vscsb.git"
+    "url": "git+https://github.com/tobiaswadsethdev/vscsb.git"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -21,9 +21,6 @@
     "servicebus",
     "dead-letter",
     "messaging"
-  ],
-  "activationEvents": [
-    "onView:azureServiceBusExplorer"
   ],
   "main": "./out/extension.js",
   "contributes": {

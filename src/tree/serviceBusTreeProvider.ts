@@ -3,6 +3,7 @@ import { ServiceBusService } from '../servicebus/serviceBusService';
 import {
     ServiceBusTreeItem,
     NamespaceTreeItem,
+    NamespaceSummaryTreeItem,
     QueuesFolderTreeItem,
     TopicsFolderTreeItem,
     QueueTreeItem,
@@ -100,7 +101,31 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
     }
 
     private async getNamespaceChildren(element: NamespaceTreeItem): Promise<ServiceBusTreeItem[]> {
+        // Calculate total message counts for the summary
+        const queues = await this.serviceBusService.listQueues(element.namespace);
+        const topics = await this.serviceBusService.listTopics(element.namespace);
+
+        let totalActive = 0;
+        let totalDeadLetter = 0;
+
+        // Sum queue messages
+        for (const queue of queues) {
+            totalActive += queue.activeMessageCount;
+            totalDeadLetter += queue.deadLetterMessageCount;
+        }
+
+        // Sum topic/subscription messages
+        for (const topic of topics) {
+            if (topic.activeMessageCount !== undefined) {
+                totalActive += topic.activeMessageCount;
+            }
+            if (topic.deadLetterMessageCount !== undefined) {
+                totalDeadLetter += topic.deadLetterMessageCount;
+            }
+        }
+
         return [
+            new NamespaceSummaryTreeItem(element.namespace, totalActive, totalDeadLetter),
             new QueuesFolderTreeItem(element.namespace),
             new TopicsFolderTreeItem(element.namespace)
         ];
@@ -121,7 +146,9 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
         return topics.map(topic => new TopicTreeItem(
             element.namespace,
             topic.name,
-            topic.subscriptionCount
+            topic.subscriptionCount,
+            topic.activeMessageCount,
+            topic.deadLetterMessageCount
         ));
     }
 
