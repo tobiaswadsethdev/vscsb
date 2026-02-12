@@ -2,7 +2,7 @@
   "name": "azure-servicebus-explorer",
   "displayName": "Azure Service Bus Explorer",
   "description": "Browse Azure Service Bus queues, topics, subscriptions and their messages including dead-letter queues",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "tobiaswadsethdev",
   "repository": {
     "type": "git",
@@ -21,6 +21,9 @@
     "servicebus",
     "dead-letter",
     "messaging"
+  ],
+  "activationEvents": [
+    "onView:azureServiceBusExplorer"
   ],
   "main": "./out/extension.js",
   "contributes": {
