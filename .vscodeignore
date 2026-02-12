@@ -1,0 +1,29 @@
+# Build artifacts
+.vscode/**
+.vscode-test/**
+out/**/*.map
+.git/**
+.gitignore
+
+# Source files (only compiled JS is needed)
+src/**
+tsconfig.json
+
+# Dependencies (bundled separately)
+node_modules/**
+
+# Development files
+*.vsix
+package-lock.json
+
+# Documentation (optional - remove if you want to include README)
+# README.md
+
+# Test files
+.vscode-test/**
+**/*.test.ts
+**/*.spec.ts
+
+# Misc
+.DS_Store
+*.log
