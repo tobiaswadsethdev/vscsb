@@ -53,7 +53,7 @@ Provide a connection string when adding a namespace. The connection string shoul
 
 The extension displays your Service Bus resources in a hierarchical tree:
 
-```
+```text
 [10|2] Total Messages                    ← Total active|dead-letter messages
 ├─ Queues
 │  ├─ [5|1] my-queue                     ← Queue with message counts
