@@ -15,9 +15,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     // Create the tree data provider
     const treeProvider = new ServiceBusTreeProvider(context, serviceBusService);
 
-    // Restore connection strings from secret storage
-    const savedNamespaces = context.globalState.get<string[]>('azureServiceBus.namespaces', []);
-    await restoreConnectionStrings(context, serviceBusService, savedNamespaces);
+    // Register commands BEFORE creating the tree view
+    // This ensures commands are available when the view renders
+    registerNamespaceCommands(context, treeProvider, serviceBusService);
+    registerMessageCommands(context, treeProvider, serviceBusService);
 
     // Register the tree view
     const treeView = vscode.window.createTreeView('azureServiceBusExplorer', {
@@ -25,9 +26,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         showCollapseAll: true
     });
 
-    // Register commands
-    registerNamespaceCommands(context, treeProvider, serviceBusService);
-    registerMessageCommands(context, treeProvider, serviceBusService);
+    // Restore connection strings from secret storage
+    const savedNamespaces = context.globalState.get<string[]>('azureServiceBus.namespaces', []);
+    await restoreConnectionStrings(context, serviceBusService, savedNamespaces);
 
     // Add disposables
     context.subscriptions.push(treeView);
