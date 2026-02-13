@@ -9,8 +9,12 @@ out/**/*.map
 src/**
 tsconfig.json
 
-# Dependencies (bundled separately)
-node_modules/**
+# Exclude devDependencies but include production dependencies
+node_modules/**/test/**
+node_modules/**/tests/**
+node_modules/**/*.test.js
+node_modules/**/*.map
+node_modules/**/.bin/**
 
 # Development files
 *.vsix
