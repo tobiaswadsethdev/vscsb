@@ -181,7 +181,8 @@ export class MessageTreeItem extends ServiceBusTreeItem {
     readonly itemType: 'activeMessage' | 'deadLetterMessage';
 
     constructor(
-        public readonly messageInfo: MessageInfo
+        public readonly messageInfo: MessageInfo,
+        public readonly parentElement?: ActiveMessagesTreeItem | DeadLetterQueueTreeItem
     ) {
         const messageId = messageInfo.message.messageId?.toString() || 'Unknown';
         const label = `Message: ${messageId.substring(0, 20)}${messageId.length > 20 ? '...' : ''}`;

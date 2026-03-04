@@ -202,69 +202,64 @@ export class ServiceBusService {
 
     async listQueues(namespace: string): Promise<QueueInfo[]> {
         const adminClient = this.getAdminClient(namespace);
-        const queues: QueueInfo[] = [];
-
+        const queueNames: string[] = [];
         for await (const queue of adminClient.listQueues()) {
-            const runtimeProps = await adminClient.getQueueRuntimeProperties(queue.name);
-            queues.push({
-                name: queue.name,
-                activeMessageCount: runtimeProps.activeMessageCount,
-                deadLetterMessageCount: runtimeProps.deadLetterMessageCount
-            });
+            queueNames.push(queue.name);
         }
-
-        return queues;
+        return Promise.all(queueNames.map(async name => {
+            const p = await adminClient.getQueueRuntimeProperties(name);
+            return {
+                name,
+                activeMessageCount: p.activeMessageCount,
+                deadLetterMessageCount: p.deadLetterMessageCount
+            };
+        }));
     }
 
     async listTopics(namespace: string): Promise<TopicInfo[]> {
         const adminClient = this.getAdminClient(namespace);
-        const topics: TopicInfo[] = [];
-
+        const topicNames: string[] = [];
         for await (const topic of adminClient.listTopics()) {
-            const runtimeProps = await adminClient.getTopicRuntimeProperties(topic.name);
+            topicNames.push(topic.name);
+        }
+        return Promise.all(topicNames.map(async name => {
+            const runtimeProps = await adminClient.getTopicRuntimeProperties(name);
 
-            // Calculate total messages across all subscriptions
-            let totalActive = 0;
-            let totalDeadLetter = 0;
-
-            for await (const subscription of adminClient.listSubscriptions(topic.name)) {
-                const subRuntimeProps = await adminClient.getSubscriptionRuntimeProperties(
-                    topic.name,
-                    subscription.subscriptionName
-                );
-                totalActive += subRuntimeProps.activeMessageCount;
-                totalDeadLetter += subRuntimeProps.deadLetterMessageCount;
+            // Collect all subscription names, then fetch their runtime props in parallel
+            const subNames: string[] = [];
+            for await (const sub of adminClient.listSubscriptions(name)) {
+                subNames.push(sub.subscriptionName);
             }
+            const subProps = await Promise.all(
+                subNames.map(subName => adminClient.getSubscriptionRuntimeProperties(name, subName))
+            );
+            const totalActive = subProps.reduce((sum: number, p) => sum + p.activeMessageCount, 0);
+            const totalDeadLetter = subProps.reduce((sum: number, p) => sum + p.deadLetterMessageCount, 0);
 
-            topics.push({
-                name: topic.name,
+            return {
+                name,
                 subscriptionCount: runtimeProps.subscriptionCount,
                 activeMessageCount: totalActive,
                 deadLetterMessageCount: totalDeadLetter
-            });
-        }
-
-        return topics;
+            };
+        }));
     }
 
     async listSubscriptions(namespace: string, topicName: string): Promise<SubscriptionInfo[]> {
         const adminClient = this.getAdminClient(namespace);
-        const subscriptions: SubscriptionInfo[] = [];
-
-        for await (const subscription of adminClient.listSubscriptions(topicName)) {
-            const runtimeProps = await adminClient.getSubscriptionRuntimeProperties(
-                topicName,
-                subscription.subscriptionName
-            );
-            subscriptions.push({
-                name: subscription.subscriptionName,
-                topicName: topicName,
-                activeMessageCount: runtimeProps.activeMessageCount,
-                deadLetterMessageCount: runtimeProps.deadLetterMessageCount
-            });
+        const subNames: string[] = [];
+        for await (const sub of adminClient.listSubscriptions(topicName)) {
+            subNames.push(sub.subscriptionName);
         }
-
-        return subscriptions;
+        return Promise.all(subNames.map(async name => {
+            const p = await adminClient.getSubscriptionRuntimeProperties(topicName, name);
+            return {
+                name,
+                topicName,
+                activeMessageCount: p.activeMessageCount,
+                deadLetterMessageCount: p.deadLetterMessageCount
+            };
+        }));
     }
 
     async peekActiveMessages(

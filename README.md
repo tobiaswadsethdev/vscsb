@@ -168,6 +168,13 @@ Issues and feature requests can be reported at the [GitHub repository](https://g
 
 ## Release Notes
 
+### 1.0.7
+
+- Significantly faster loading when opening a namespace, queue, or topic
+- Runtime property fetches for queues, topics, and subscriptions are now parallelized — reducing initial load time proportionally to entity count
+- After deleting or requeuing a dead-letter message, only the affected message list is refreshed instead of the entire tree, making post-operation reload near-instant
+- `listQueues` and `listTopics` now run concurrently when expanding a namespace node
+
 ### 1.0.2
 
 - Moved message counts to the left side for better readability
