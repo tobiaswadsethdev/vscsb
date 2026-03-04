@@ -163,7 +163,7 @@ export function registerMessageCommands(
                         );
 
                         vscode.window.showInformationMessage('Message resubmitted successfully');
-                        treeProvider.refresh();
+                        treeProvider.refresh(item.parentElement);
                     }
                 );
             } catch (error) {
@@ -211,7 +211,7 @@ export function registerMessageCommands(
                         );
 
                         vscode.window.showInformationMessage('Message deleted successfully');
-                        treeProvider.refresh();
+                        treeProvider.refresh(item.parentElement);
                     }
                 );
             } catch (error) {

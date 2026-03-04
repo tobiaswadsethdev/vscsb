@@ -102,8 +102,10 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
 
     private async getNamespaceChildren(element: NamespaceTreeItem): Promise<ServiceBusTreeItem[]> {
         // Calculate total message counts for the summary
-        const queues = await this.serviceBusService.listQueues(element.namespace);
-        const topics = await this.serviceBusService.listTopics(element.namespace);
+        const [queues, topics] = await Promise.all([
+            this.serviceBusService.listQueues(element.namespace),
+            this.serviceBusService.listTopics(element.namespace)
+        ]);
 
         let totalActive = 0;
         let totalDeadLetter = 0;
@@ -221,7 +223,7 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
                 subscriptionName: element.subscriptionName,
                 isDeadLetter: false
             };
-            return new MessageTreeItem(messageInfo);
+            return new MessageTreeItem(messageInfo, element);
         });
     }
 
@@ -247,7 +249,7 @@ export class ServiceBusTreeProvider implements vscode.TreeDataProvider<ServiceBu
                     subscriptionName: element.subscriptionName,
                     isDeadLetter: true
                 };
-                return new MessageTreeItem(messageInfo);
+                return new MessageTreeItem(messageInfo, element);
             });
         } catch (error) {
             console.error(`[ServiceBus] Error peeking dead-letter messages:`, error);
